@@ -1,3 +1,4 @@
+import hashlib
 from flask import Flask, Response
 from flask import request
 from flask import jsonify
@@ -14,21 +15,16 @@ auth_app.config.from_object(Configuration)
 auth_db.init_app(auth_app)
 jwt = JWTManager(auth_app)
 
-'''with auth_app.app_context():
+with auth_app.app_context():
     auth_db.create_all()
 
     ownerRole = Role.query.filter(Role.name == 'owner').first()
-    customerRole = Role.query.filter(Role.name == 'customer').first()
-    courierRole = Role.query.filter(Role.name == 'courier').first()
-
-    if not ownerRole:
-        auth_db.session.add(Role(name='owner'))
-    if not customerRole:
-        auth_db.session.add(Role(name='customer'))
-    if not courierRole:
-        auth_db.session.add(Role(name='courier'))
-
-    auth_db.session.commit()'''
+    ownerpassword = 'evenmoremoney'
+    owner = User.query.filter_by(email='onlymoney@gmail.com').first()
+    if not owner:
+        owner = User(forename='Scrooge', surname='McDuck', email='onlymoney@gmail.com', password=hashlib.sha256(ownerpassword.encode('utf-8')).hexdigest(), role=ownerRole.id)
+        auth_db.session.add(owner)
+        auth_db.session.commit()
 
 @auth_app.route('/register_customer', methods=['POST'])
 def register_customer():
@@ -59,7 +55,7 @@ def register_customer():
         auth_app.logger.error(f'User {forename} {surname} failed to register. Email already registered.')
         return jsonify({'message': 'Email already exists'}), 400
 
-    user = User(forename=forename, surname=surname, email=email, password=password, role=role.id)
+    user = User(forename=forename, surname=surname, email=email, password=hashlib.sha256(password.encode('utf-8')).hexdigest(), role=role.id)
     auth_db.session.add(user)
     auth_db.session.commit()
     auth_app.logger.info(f'User with username {email} registered.')
@@ -94,7 +90,7 @@ def register_courier():
         auth_app.logger.error(f'User {forename} {surname} failed to register. Email already registered.')
         return jsonify({'message': 'Email already exists'}),400
 
-    user = User(forename=forename, surname=surname, email=email, password=password, role=role.id)
+    user = User(forename=forename, surname=surname, email=email, password=hashlib.sha256(password.encode('utf-8')).hexdigest(), role=role.id)
     auth_db.session.add(user)
     auth_db.session.commit()
     auth_app.logger.info(f'User with username {email} registered.')
@@ -114,7 +110,7 @@ def login_user():
         return jsonify({'message': 'Invalid email'}), 400
 
     user = User.query.filter_by(email=email).first()
-    if not user or user.password != password:
+    if not user or user.password != hashlib.sha256(password.encode('utf-8')).hexdigest():
         auth_app.logger.error(f'User {email} failed to login. User does not exist.')
         return jsonify({'message': 'Invalid credentials'}), 400
 

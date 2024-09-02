@@ -19,4 +19,3 @@ CREATE TABLE "user" (
 
 );
 
-INSERT INTO "user"(forename, surname, email, password, role) VALUES('Scrooge', 'McDuck', 'onlymoney@gmail.com', 'evenmoremoney', 1);
