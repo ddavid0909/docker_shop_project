@@ -1,0 +1,24 @@
+version: "3"
+services:
+
+  auth_database:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres_root_password
+      POSTGRES_DB: auth_db
+    networks:
+      - auth_database_adminer
+    ports:
+      - 5432:5432
+    volumes:
+      - ./auth_sql:/docker-entrypoint-initdb.d
+
+  auth_adminer:
+    image: adminer
+    ports:
+      - 8080:8080
+    networks:
+      - auth_database_adminer
+
+networks:
+  auth_database_adminer:
