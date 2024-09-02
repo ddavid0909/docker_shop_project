@@ -47,18 +47,22 @@ def register_customer():
     role = Role.query.filter(Role.name == 'customer').first()
 
     if email.find('@') == -1:
+        auth_app.logger.error(f'User {forename} {surname} failed to register. Email invalid.')
         return jsonify({'message': 'Invalid email'})
 
     if len(password) < 8:
+        auth_app.logger.error(f'User {forename} {surname} failed to register. Password too short.')
         return jsonify({'message': 'Invalid password'})
 
     email_occupied = User.query.filter(User.email == email).all()
     if len(email_occupied) > 0:
+        auth_app.logger.error(f'User {forename} {surname} failed to register. Email already registered.')
         return jsonify({'message': 'Email already exists'}), 400
 
     user = User(forename=forename, surname=surname, email=email, password=password, role=role.id)
     auth_db.session.add(user)
     auth_db.session.commit()
+    auth_app.logger.info(f'User with username {email} registered.')
     return Response(status=200)
 
 @auth_app.route('/register_courier', methods=['POST'])
@@ -78,18 +82,22 @@ def register_courier():
     role = Role.query.filter(Role.name == 'courier').first()
 
     if email.find('@') == -1:
+        auth_app.logger.error(f'User {forename} {surname} failed to register. Email invalid.')
         return jsonify({'message': 'Invalid email'}), 400
 
     if len(password) < 8:
+        auth_app.logger.error(f'User {forename} {surname} failed to register. Password too short.')
         return jsonify({'message': 'Invalid password'}), 400
 
     email_occupied = User.query.filter(User.email == email).all()
     if len(email_occupied) > 0:
+        auth_app.logger.error(f'User {forename} {surname} failed to register. Email already registered.')
         return jsonify({'message': 'Email already exists'}),400
 
     user = User(forename=forename, surname=surname, email=email, password=password, role=role.id)
     auth_db.session.add(user)
     auth_db.session.commit()
+    auth_app.logger.info(f'User with username {email} registered.')
     return Response(status=200)
 
 
@@ -102,10 +110,12 @@ def login_user():
     email = str(request.json['email'])
     password = str(request.json['password'])
     if email.find('@') == -1:
+        auth_app.logger.error(f'User {email} failed to login. Email invalid.')
         return jsonify({'message': 'Invalid email'}), 400
 
     user = User.query.filter_by(email=email).first()
     if not user or user.password != password:
+        auth_app.logger.error(f'User {email} failed to login. User does not exist.')
         return jsonify({'message': 'Invalid credentials'}), 400
 
     claims = {
@@ -115,6 +125,7 @@ def login_user():
     }
 
     access_token = create_access_token(identity=user.email, additional_claims=claims)
+    auth_app.logger.info(f'User {email} logged in successfully.')
     return jsonify(access_token=access_token), 200
 
 @auth_app.route('/delete', methods=['POST'])
@@ -126,6 +137,7 @@ def delete():
         return jsonify({'message': 'Unknown user'}), 400
     auth_db.session.delete(user)
     auth_db.session.commit()
+    auth_app.logger.info(f"User {user.email} deleted from the system.")
     return Response(status=200)
 
 if __name__ == '__main__':
