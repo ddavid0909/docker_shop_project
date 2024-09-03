@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python
 LABEL authors="fafulja"
 
 COPY auth_config.py /auth_config.py

@@ -16,13 +16,11 @@ auth_db.init_app(auth_app)
 jwt = JWTManager(auth_app)
 
 with auth_app.app_context():
-    auth_db.create_all()
-
-    ownerRole = Role.query.filter(Role.name == 'owner').first()
-    ownerpassword = 'evenmoremoney'
+    owner_role = Role.query.filter(Role.name == 'owner').first()
+    owner_password = 'evenmoremoney'
     owner = User.query.filter_by(email='onlymoney@gmail.com').first()
     if not owner:
-        owner = User(forename='Scrooge', surname='McDuck', email='onlymoney@gmail.com', password=hashlib.sha256(ownerpassword.encode('utf-8')).hexdigest(), role=ownerRole.id)
+        owner = User(forename='Scrooge', surname='McDuck', email='onlymoney@gmail.com', password=hashlib.sha256(owner_password.encode('utf-8')).hexdigest(), role=owner_role.id)
         auth_db.session.add(owner)
         auth_db.session.commit()
 
@@ -31,7 +29,7 @@ def register_customer():
     if 'forename' not in request.json:
         return jsonify({'message': 'Field forename is missing'}), 400
     if 'surname' not in request.json:
-        return jsonify({'message': 'Field Surname is missing'}), 400
+        return jsonify({'message': 'Field surname is missing'}), 400
     if 'email' not in request.json:
         return jsonify({'message': 'Field email is missing'}), 400
     if 'password' not in request.json:

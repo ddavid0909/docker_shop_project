@@ -11,7 +11,7 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - ./auth_sql:/docker-entrypoint-initdb.d
+      - ./auth/auth_sql:/docker-entrypoint-initdb.d
 
   auth_adminer:
     image: adminer
@@ -20,5 +20,25 @@ services:
     networks:
       - auth_database_adminer
 
+  main_database:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres_root_password
+      POSTGRES_DB: main_db
+    networks:
+      - main_database_adminer
+    ports:
+      - 5431:5432
+    volumes:
+      - ./main/main_sql:/docker-entrypoint-initdb.d
+
+  main_adminer:
+    image: adminer
+    ports:
+      - 8081:8080
+    networks:
+      - main_database_adminer
+
 networks:
   auth_database_adminer:
+  main_database_adminer:
