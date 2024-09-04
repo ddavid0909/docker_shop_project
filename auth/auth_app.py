@@ -1,4 +1,6 @@
 import hashlib
+import os
+
 from flask import Flask, Response
 from flask import request
 from flask import jsonify
@@ -135,4 +137,5 @@ def delete():
     return Response(status=200)
 
 if __name__ == '__main__':
-    auth_app.run(debug=True)
+    auth_app.run(debug=True, host='localhost' if 'PRODUCTION' not in os.environ else '0.0.0.0')
+

@@ -1,4 +1,5 @@
 import datetime
+import os
 from itertools import product
 
 from flask import Flask, jsonify, request, Response
@@ -210,4 +211,4 @@ def pick_up_order():
 
 
 if __name__ == '__main__':
-    main_app.run(debug=True, port=5001)
+    main_app.run(debug=True, host='localhost' if 'PRODUCTION' not in os.environ else '0.0.0.0')
