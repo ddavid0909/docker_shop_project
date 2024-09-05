@@ -39,6 +39,12 @@ services:
     networks:
       - main_database_adminer
 
+  ethereum:
+    image: trufflesuite/ganache-cli
+    ports:
+      - 8545:8545
+
+
 networks:
   auth_database_adminer:
   main_database_adminer:

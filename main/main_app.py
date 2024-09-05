@@ -1,13 +1,16 @@
 import datetime
 import os
-from itertools import product
 
 from flask import Flask, jsonify, request, Response
 from flask_jwt_extended import jwt_required, JWTManager, get_jwt, get_jwt_identity
+from flask_migrate import Migrate
 from sqlalchemy import String, func
 from sqlalchemy.dialects.postgresql import ARRAY
+from web3.exceptions import ContractLogicError
 
 from main_config import Configuration
+
+from role_check import role_check
 
 from main_models import main_db
 from main_models import ProductCategory
@@ -15,13 +18,19 @@ from main_models import Product
 from main_models import Category
 from main_models import Order
 from main_models import Element
-from role_check import role_check
+
+from main_solidity import create_contract
+from main_solidity import add_courier
+from main_solidity import confirm_delivery
+from main_solidity import money_to_owner
 
 main_app = Flask(__name__)
 main_app.config.from_object(Configuration)
 main_db.init_app(main_app)
+migrate = Migrate(app=main_app, db=main_db)
 
 jwt = JWTManager(main_app)
+
 
 
 @main_app.route('/update', methods=['POST'])
@@ -118,9 +127,7 @@ def create_order():
     if 'requests' not in request.json:
         return jsonify({'message': 'Field requests is missing'}), 400
     requests = request.json['requests']
-    # print(requests)
-    # print(type(requests))
-    # MAYBE NEED TO DO JSON LOADS
+
     for req in requests:
         if 'id' not in req:
             return jsonify({'message': f'Product id is missing for request number {req_num}'}), 400
@@ -136,8 +143,16 @@ def create_order():
             return jsonify({'message': 'Product id is missing '})
         to_pay += req['quantity'] * product.price
         req_num += 1
+
+    if 'address' not in request.json:
+        return jsonify({'message': 'Field address is missing'}), 400
+    if request.json['address'].find('0x') != 0 or len(request.json['address']) != 42:
+        return jsonify({'message': 'Invalid address'}), 400
+
+    contract = create_contract(request.json['address'], to_pay)
+
     # timezone sensitivity
-    order = Order(creation_time=datetime.datetime.now(), to_pay=to_pay, user_email=email)
+    order = Order(creation_time=datetime.datetime.now(), to_pay=to_pay, user_email=email, contract_address=contract)
     main_db.session.add(order)
     main_db.session.commit()
 
@@ -155,7 +170,7 @@ def get_status():
     return_list = []
     orders = Order.query.filter_by(user_email=email).all()
     for order in orders:
-        order_dict = {'products': [], 'price': order.to_pay, 'status': order.status, 'timestamp': order.creation_time}
+        order_dict = {'products': [], 'price': order.to_pay, 'status': order.status, 'timestamp': order.creation_time, 'address': order.contract_address}
         products_list = ((main_db.session.query(Product.name, Product.price, Element.quantity,
                                                 func.array_agg(Category.name, type_=ARRAY(String)))
                           .join(Element, Product.id == Element.product_id).join(ProductCategory,
@@ -163,12 +178,15 @@ def get_status():
                           .join(Category, ProductCategory.category_id == Category.id)).filter(
             order.id == Element.order_id).
                          group_by(Product.name, Product.price, Element.quantity).all())
-        # print(products_list)
+
         for product in products_list:
             order_dict['products'].append(
                 {'name': product[0], 'price': product[1], 'quantity': product[2], 'categories': product[3]})
         return_list.append(order_dict)
     return jsonify({'orders': return_list}), 200
+
+
+
 
 
 @main_app.route('/delivered', methods=['POST'])
@@ -180,10 +198,15 @@ def delivered():
     order = Order.query.filter_by(id=request.json['id']).first()
     if not order or order.status != 'PENDING' or order.user_email != email:
         return jsonify({'message': 'Invalid order id'}), 400
-    order.status = 'COMPLETE'
-    main_db.session.add(order)
-    main_db.session.commit()
-    return Response(status=200)
+
+    try:
+        confirm_delivery(order.contract_address)
+        order.status = 'COMPLETE'
+        main_db.session.add(order)
+        main_db.session.commit()
+        return Response(status=200)
+    except ContractLogicError as cle:
+        return jsonify({'message': cle.message}), 400
 
 
 @main_app.route('/orders_to_deliver', methods=['GET'])
@@ -193,7 +216,7 @@ def orders_to_deliver():
     return jsonify({'orders': [{'id': order[0], 'user_email': order[1]} for order in orders]}), 200
 
 
-@main_app.route('/pick_up_order')
+@main_app.route('/pick_up_order', methods=['POST'])
 @role_check('courier')
 def pick_up_order():
     if 'id' not in request.json:
@@ -203,12 +226,22 @@ def pick_up_order():
         return jsonify({'message': 'Invalid order id'}), 400
     order = Order.query.filter_by(id=order_id).first()
     if not order or order.status != 'CREATED':
-        return jsonify({'message': 'Invalid order id'}), 400
-    order.status = 'PENDING'
-    main_db.session.add(order)
-    main_db.session.commit()
-    return Response(status=200)
+        return jsonify({'message': 'Invalid order status'}), 400
+    if 'address' not in request.json:
+        return jsonify({'message': 'Missing address'}), 400
+    if request.json['address'].find('0x') != 0 or len(request.json['address']) != 42:
+        return jsonify({'message': 'Invalid address'}), 400
+
+    try:
+        add_courier(order.contract_address, request.json['address'])
+        order.status = 'PENDING'
+        main_db.session.add(order)
+        main_db.session.commit()
+        return Response(status=200)
+    except ContractLogicError as cle:
+        return jsonify({'message': cle.message.split('revert ')[-1]}), 400
 
 
 if __name__ == '__main__':
-    main_app.run(debug=True, host='localhost' if 'PRODUCTION' not in os.environ else '0.0.0.0')
+    money_to_owner()
+    main_app.run(debug=False, host='localhost' if 'PRODUCTION' not in os.environ else '0.0.0.0', port=5001 if 'PRODCUTION' not in os.environ else 5000)

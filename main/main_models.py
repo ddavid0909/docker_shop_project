@@ -32,7 +32,7 @@ class Order(main_db.Model):
     __tablename__ = 'order'
     id = main_db.Column(main_db.Integer, primary_key=True)
     creation_time = main_db.Column(main_db.DateTime, nullable=False)
-    #contract_address = main_db.Column(main_db.String(256), nullable=False)
+    contract_address = main_db.Column(main_db.String(256), nullable=True)
     # customer_address is not a field, but must be put in the contract as customer address immediately
     # courier_address is not a field either, but must be put in the contract upon pick-up.
     to_pay = main_db.Column(main_db.Float, nullable=False)
