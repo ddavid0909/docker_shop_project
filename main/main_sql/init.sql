@@ -1,12 +1,12 @@
 CREATE TABLE product (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(256) NOT NULL,
+    name VARCHAR(256) NOT NULL UNIQUE,
     price DECIMAL(10,3) NOT NULL
 );
 
 CREATE TABLE category (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(256) NOT NULL
+    name VARCHAR(256) NOT NULL UNIQUE
 );
 
 CREATE TABLE product_category (

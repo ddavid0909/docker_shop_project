@@ -1,15 +1,24 @@
 import secrets
+import os
 from web3 import Web3
 from web3 import HTTPProvider
 from web3 import Account
 
-
-web3 = Web3(HTTPProvider('http://127.0.0.1:8545'))
-#it will be an issue after containerization
-owner_private_key = '0x' + secrets.token_hex(32)
-owner_account = Account.from_key(owner_private_key)
-owner_address = owner_account.address
+ETH_ADDRESS = '127.0.0.1' if 'ETHEREUM_HOST' not in os.environ else os.environ['ETHEREUM_HOST']
+web3 = Web3(HTTPProvider(f'http://{ETH_ADDRESS}:8545'))
+if os.path.isfile('./owner_credentials.txt'):
+    with open('./owner_credentials.txt', 'r') as f:
+        owner_private_key = f.readline().strip()
+        owner_address = f.readline().strip()
+else:
+    owner_private_key = '0x' + secrets.token_hex(32)
+    owner_account = Account.from_key(owner_private_key)
+    owner_address = owner_account.address
+    with open('./owner_credentials.txt', 'x') as f:
+        f.write(f'{owner_private_key}\n')
+        f.write(f'{owner_address}')
 print(owner_address)
+print(owner_private_key)
 def money_to_owner():
     web3.eth.send_transaction({'from': web3.eth.accounts[0],
                                'to': owner_address,
@@ -27,8 +36,8 @@ def read_file(path):
         return file.read()
 
 
-abi = read_file('./solidity/output/contract.abi')
-bytecode = read_file('./solidity/output/contract.bin')
+abi = read_file('./solidity/output/Contract.abi')
+bytecode = read_file('./solidity/output/Contract.bin')
 
 
 def create_contract(customer_address, price):

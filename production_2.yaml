@@ -1,0 +1,61 @@
+version: "3"
+services:
+
+  auth_database:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres_root_password
+      POSTGRES_DB: auth_db
+    networks:
+      - auth
+    ports:
+      - '5432'
+    volumes:
+      - ./auth/auth_sql:/docker-entrypoint-initdb.d
+
+  auth_app:
+    image: auth_app
+    environment:
+      DATABASE_HOST: auth_database
+      DATABASE_PORT: 5432
+      PRODUCTION: 5000
+    networks:
+      - auth
+    ports:
+      - 5000:5000
+
+  main_database:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres_root_password
+      POSTGRES_DB: main_db
+    networks:
+      - main_to_db
+    ports:
+      - '5432'
+    volumes:
+      - ./main/main_sql:/docker-entrypoint-initdb.d
+
+  ethereum:
+    image: trufflesuite/ganache-cli
+    ports:
+      - 8545:8545
+    networks:
+      - main_to_eth
+
+  main_app:
+    image: main_app
+    environment:
+      DATABASE_HOST: main_database
+      ETHEREUM_HOST: ethereum
+      DATABASE_PORT: 5432
+      PRODUCTION: 5001
+    networks:
+      - main_to_db
+      - main_to_eth
+    ports:
+      - 5001:5000
+networks:
+  auth:
+  main_to_db:
+  main_to_eth:

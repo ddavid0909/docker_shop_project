@@ -2,7 +2,7 @@ import datetime
 import os
 
 from flask import Flask, jsonify, request, Response
-from flask_jwt_extended import jwt_required, JWTManager, get_jwt, get_jwt_identity
+from flask_jwt_extended import JWTManager, get_jwt_identity
 from flask_migrate import Migrate
 from sqlalchemy import String, func
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -30,7 +30,6 @@ main_db.init_app(main_app)
 migrate = Migrate(app=main_app, db=main_db)
 
 jwt = JWTManager(main_app)
-
 
 
 @main_app.route('/update', methods=['POST'])
@@ -244,4 +243,4 @@ def pick_up_order():
 
 if __name__ == '__main__':
     money_to_owner()
-    main_app.run(debug=False, host='localhost' if 'PRODUCTION' not in os.environ else '0.0.0.0', port=5001 if 'PRODCUTION' not in os.environ else 5000)
+    main_app.run(debug=False, host='127.0.0.1' if 'PRODUCTION' not in os.environ else '0.0.0.0')
