@@ -32,17 +32,21 @@ this requests concurrently. He is either adding new products and categories and 
 or he is asking for statistics. What is more, the barely added products can or cannot appear. Whatever happens, they will
 have zero categories. This mild mistake has to do with favoring availability to absolute consistency. Such a situation
 would be so rare that it does not make sense to slow down the system for it.
-If owner gets for himself two or more jwt tokens and accesses from different devices, this can easily lead to the situation described above.
+If owner gets for himself two or more jwt tokens and accesses from different devices, this can easily lead
+to the situation described above.
 Doing post from multiple different devices can lead to the following: both check that certain category does not exist
-and both add it to their session. During commit, one will fail with error 500, due to the unique constraint on the category name.
-However, product and category are added through the same commit, so a restart of the operation will succeed, and no inconsistency shall ensue.
+and both add it to their session. During commit, one will fail with error 500, due to the unique constraint
+on the category name.
+However, product and category are added through the same commit, so a restart of the operation will succeed,
+and no inconsistency shall ensue.
 
 Customer:
 Can see different products and categories through search operations. He can therefore add to the order
 only ids of products that he saw.
 One situation that can obviously happen is that he mistakenly tries an id that works because it was not there
 when he performed the search, but appeared there later. This can be solved by adding make order and confirm order commands,
-where the first adds the order to the database but does not make it a valid order (that is another column in the table, either 0 or 1)
+where the first adds the order to the database but does not make it a valid order
+(that is another column in the table, either 0 or 1)
 and returns the order contents to the customer. Customer can then either confirm or deny the order and make a new one.
 This is possible but omitted for the sake of simplicity. Can be added later.
 Customer cannot see products that do not exist, it can only happen that he do not see products that do exist.

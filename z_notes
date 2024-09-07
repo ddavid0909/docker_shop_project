@@ -1,0 +1,35 @@
+Contract skeleton
+
+variables:
+- order_status : 'CREATED', 'PENDING', 'DELIVERED'
+  control: cannot become pending until money is on the contract and courier has arrived
+           cannot become delivered until customer confirms it has been delivered.
+           once delivered, no one can interact with the contract anymore.
+
+- money_needed = amount_of_money_to_pay
+- money_available = 0
+functions:
+- constructor(customer_address, amount_of_money_to_pay, owner_address)
+- modifiers customer_only and courier_only
+- add_money() customer_only require(order_status == 'CREATED')
+- add_courier() owner_only require(order_status == 'CREATED' and money_needed == money_available) -> order_status = pending
+- confirm_delivery() customer_only require(order_status == 'PENDING') -> transfer money to accounts of courier and owner. order_status = delivered.
+
+TO_DO:
+- Spark - pogledaj kurs 2 casa.
+
+Additions:
+1. Redis for rate limiting on the server
+Upon registration, there is no way to control the number of requests. The best way would be adding email verification also through redis.
+After login, there is a way to control that, say by not allowing more than 20 requests in 10 minutes from any user_email (because there may be constant changes of tokens by multiple logins). Allow for change as admin.
+If the counter reaches 20, only 429 is returned.
+user_email:number_of_requests ex=10 minutes
+the new one will be added once the old one disappears.
+
+2. Email to the admin in cases of serious errors
+
+3. Geospatial data about where the users want things delivered to be added to every order.
+4. Function for couriers that sorts deliveries in a certain way through postgres.
+
+5. add_order adds invalid order. confirm_order validates it and deny_order deletes it completely. Can only be done if
+order is in the state 'CREATED'. this will change most order operations since only valid orders should be visible.

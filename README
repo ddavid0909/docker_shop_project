@@ -1,0 +1,11 @@
+When running the app main_app, you can test all functionalities from main_app_testing jupyter notebook before running
+commands:
+1. docker ps
+then finding the name of the container for main_app and running
+2. docker exec -it <container_name> bash
+then running
+3. flask --app main_app.py db upgrade
+for migrations to occur.
+This was done on purpose to simulate the work with migrations. Only after having migrated the changes to the database
+should you run ethereum_testing.ipynb.
+Getters from sol file where added for testing purposes and will be removed soon.

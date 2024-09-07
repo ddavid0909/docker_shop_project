@@ -12,6 +12,11 @@ services:
       - '5432'
     volumes:
       - ./auth/auth_sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   auth_app:
     image: auth_app
@@ -23,6 +28,9 @@ services:
       - auth
     ports:
       - 5000:5000
+    depends_on:
+      auth_database:
+        condition: service_healthy
 
   main_database:
     image: postgres
@@ -35,6 +43,11 @@ services:
       - '5432'
     volumes:
       - ./main/main_sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ 'CMD-SHELL', 'pg_isready -U postgres' ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   ethereum:
     image: trufflesuite/ganache-cli
@@ -55,6 +68,11 @@ services:
       - main_to_eth
     ports:
       - 5001:5000
+    depends_on:
+      main_database:
+        condition: service_healthy
+      ethereum:
+        condition: service_started
 networks:
   auth:
   main_to_db:
